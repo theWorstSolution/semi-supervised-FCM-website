@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Fuzzy c-means clustering</title>
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+    <![endif]-->
+    <style>
+        #displayResult-{
+          height: 350px;
+          overflow: auto;
+          border-style: solid;
+        }
+    </style>
+  </head>
+  <body>
+    <form id="input-" enctype="multipart/form-data" method="POST">
+      {% csrf_token %}
+        <Label>Set parameter</Label>
+        <ul>
+            <li><input type="number" step="0.001" name="m-" id="m-" placeholder="m"></li>
+            <li><input type="number" step="0.001" name="epsilon-" id="epsilon-" placeholder="epsilon"></li>
+            <li><input type="number" name="minCluster-" id="minCluster-" placeholder="minumum number of clusters"><input type="number" name="maxCluster-" id="maxCluster-" placeholder="maximum number of clusters"></li>
+        </ul>
+        <label>Choose dataset</label>
+        <input type="file" name="dataset" id="dataset-">
+        <input type="submit">
+        <!-- chon phuong phap (optional) -->
+    </form>
+    
+    <!-- show dataset va cho nguoi dung chon cot muon su dung (optional) -->
+    <div id="displayDataset-"></div>
+    <input type="button" value="Tien hanh phan cum">
+    <!-- make scrollable -->
+    <div id="displayResult-" >
+        <!-- <h3>Cụm 1</h3>
+        <p>Tam cum:</p>
+        <table></table>
+        <p>Cac diem trong cum</p>
+        <table></table> -->
+        
+    </div>
+
+    <div id="displayInformation-">
+        <p>So buoc lap: </p>
+        <p>Thoi gian: </p>
+        <p>Do do hieu nang: </p>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    <script>
+        inputForm = document.getElementById("input-");
+        inputForm.onsubmit = function(event){
+            event.preventDefault();
+            var formData = new FormData(document.getElementById('input-'));
+            $.ajaxSetup({
+            // make sure to send the header
+                headers: {
+                    "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value,
+                }
+            });
+            $.ajax({
+              url: 'handleInput/',
+              type: 'POST',
+              processData: false,
+              contentType: false,
+              data: formData,
+              success: function(response) {
+                
+                displayDataset = document.getElementById("displayResult-");
+                displayDataset.innerHTML = response["result"];
+                displayInformation = document.getElementById("displayInformation-");
+                displayInformation.innerHTML = response["information"];
+                alert("done");
+                //console.log(document);
+              },
+              
+              error:function(){
+                alert("Error");	
+              }
+            });
+        }
+    </script>
+  </body>
+</html>
