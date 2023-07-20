@@ -26,9 +26,10 @@
       {% csrf_token %}
         <Label>Set parameter</Label>
         <ul>
-            <li><input type="number" step="0.001" name="m-" id="m-" placeholder="m"></li>
+            <li><input type="number" step="1" name="m-" id="m-" placeholder="m"></li>
             <li><input type="number" step="0.001" name="epsilon-" id="epsilon-" placeholder="epsilon"></li>
-            <li><input type="number" name="minCluster-" id="minCluster-" placeholder="minumum number of clusters"><input type="number" name="maxCluster-" id="maxCluster-" placeholder="maximum number of clusters"></li>
+			<li><input type="number" name="maxIters-" id="maxIters-" placeholder="maximum number of iterations">
+            <li><input type="number" name="nCenters-" id="nCenters-" placeholder="number of clusters">
         </ul>
         <label>Choose dataset</label>
         <input type="file" name="dataset" id="dataset-">
@@ -38,7 +39,7 @@
     
     <!-- show dataset va cho nguoi dung chon cot muon su dung (optional) -->
     <div id="displayDataset-"></div>
-    <input type="button" value="Tien hanh phan cum">
+    <input type="button" value="Tien hanh phan cum" style="" id="previewTableSubmit-">
     <!-- make scrollable -->
     <div id="displayResult-" >
         <!-- <h3>Cụm 1</h3>
@@ -56,6 +57,7 @@
     </div>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
     <script>
+		let nCenters = 0;
         inputForm = document.getElementById("input-");
         inputForm.onsubmit = function(event){
             event.preventDefault();
@@ -74,10 +76,39 @@
               data: formData,
               success: function(response) {
                 
-                displayDataset = document.getElementById("displayResult-");
-                displayDataset.innerHTML = response["result"];
-                displayInformation = document.getElementById("displayInformation-");
-                displayInformation.innerHTML = response["information"];
+                // displayDataset = document.getElementById("displayResult-");
+                // displayDataset.innerHTML = response["result"];
+                // displayInformation = document.getElementById("displayInformation-");
+                // displayInformation.innerHTML = response["information"];
+				nCenters = response["nCenters"];
+                displayDataset = document.getElementById("displayDataset-");
+                displayDataset.innerHTML = response["previewTable"];
+                headRow = displayDataset.querySelectorAll("thead tr")[0];
+				alert(nCenters);
+				for(let i=0; i<nCenters; i++){
+					column = document.createElement("th");
+					column.innerHTML = `Cum ${i+1}`;
+					headRow.appendChild(column);
+					//console.log(column);
+				}
+                rows = displayDataset.querySelectorAll("tbody tr");
+				console.log(rows.length)
+				for (let i=0; i<rows.length; i++){
+					//console.log("a");
+					for(let j=0; j<nCenters; j++){
+						//console.log("b");
+						let td = document.createElement("td");
+						let radioBtn = document.createElement("input");
+						radioBtn.type = "radio";
+						radioBtn.name = i;
+						radioBtn.id = `${i}${j}`;
+						td.appendChild(radioBtn);
+						//td.innerHTML = "abc";
+						rows[i].appendChild(td);
+						//console.log("c");
+					}
+					//console.log(i);
+				}
                 alert("done");
                 //console.log(document);
               },
@@ -87,6 +118,81 @@
               }
             });
         }
+		previewTableSubmit = document.getElementById("previewTableSubmit-");
+        previewTableSubmit.onclick = function(event){
+            event.preventDefault();
+            //var formData = new FormData(document.getElementById('input-'));
+			displayDataset = document.getElementById("displayDataset-");
+			rows = displayDataset.querySelectorAll("tbody tr");
+			//console.log(rows.length)
+			initU = []
+			for (let i=0; i<rows.length; i++){
+				//console.log("a");
+				for(let j=0; j<nCenters; j++){
+					radioBtn = document.getElementById(`${i}${j}`);
+					if(radioBtn.checked)
+						initU.push(1);
+					else
+						initU.push(0);
+				}
+				//console.log(i);
+			}
+			console.log(initU);
+            $.ajaxSetup({
+            // make sure to send the header
+                headers: {
+                    "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value,
+                }
+            });
+			$.ajax({
+              url: 'clustering/',
+              type: 'POST',
+              //processData: false,
+              //contentType: false,
+              data: {"initU": initU},
+              success: function(response) {
+				displayResult = document.getElementById("displayResult-");
+				displayResult.innerHTML = response["result"];
+				displayInformation = document.getElementById("displayInformation-");
+				displayInformation.innerHTML = response["information"];
+				alert("success");	
+              },
+              
+              error:function(){
+                alert("Error");	
+              }
+            });
+        }
+        // inputForm.onsubmit = function(event){
+        //     event.preventDefault();
+        //     var formData = new FormData(document.getElementById('input-'));
+        //     $.ajaxSetup({
+        //     // make sure to send the header
+        //         headers: {
+        //             "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value,
+        //         }
+        //     });
+        //     $.ajax({
+        //       url: 'handleInput/',
+        //       type: 'POST',
+        //       processData: false,
+        //       contentType: false,
+        //       data: formData,
+        //       success: function(response) {
+                
+        //         displayDataset = document.getElementById("displayResult-");
+        //         displayDataset.innerHTML = response["result"];
+        //         displayInformation = document.getElementById("displayInformation-");
+        //         displayInformation.innerHTML = response["information"];
+        //         alert("done");
+        //         //console.log(document);
+        //       },
+              
+        //       error:function(){
+        //         alert("Error");	
+        //       }
+        //     });
+         //}
     </script>
   </body>
 </html>

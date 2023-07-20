@@ -20,4 +20,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("",home_view),
     path("handleInput/",handleInput),
+    path("clustering/",clustering),
 ]
