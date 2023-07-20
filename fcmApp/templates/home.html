@@ -84,7 +84,7 @@
                 displayDataset = document.getElementById("displayDataset-");
                 displayDataset.innerHTML = response["previewTable"];
                 headRow = displayDataset.querySelectorAll("thead tr")[0];
-				alert(nCenters);
+				//alert(nCenters);
 				for(let i=0; i<nCenters; i++){
 					column = document.createElement("th");
 					column.innerHTML = `Cum ${i+1}`;
@@ -109,7 +109,7 @@
 					}
 					//console.log(i);
 				}
-                alert("done");
+                //alert("done");
                 //console.log(document);
               },
               

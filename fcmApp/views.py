@@ -27,7 +27,7 @@ inputTable = None
 nCenters = 0
 inputFile = None
 maxIters = 1000
-
+intraDistance = None
 # Create your views here.
 def home_view(request,*args,**kwargs):
     
@@ -116,9 +116,11 @@ def sfcmClustering(points, nCenters, initU,m=2, maxError=0.005, maxIter=1000, in
         iters += 1
     return u, centers, error, iters
     
-class Cluster:
+class ClusterHtml:
     pass
 
+class Cluster:
+    pass
 def handleInput(request,*args,**kwargs):
     global m
     global epsilon
@@ -126,6 +128,7 @@ def handleInput(request,*args,**kwargs):
     global inputFile
     global nCenters
     global maxIters
+    global intraDistance
     #start_time = time.time()
     if request.method == 'POST':
         inputFile = request.FILES['dataset'].read()
@@ -144,9 +147,50 @@ def handleInput(request,*args,**kwargs):
         #return HttpResponse("previewTable.html", {"inputTableHtml": inputTableHtml})
         context = {"inputTableHtml": inputTableHtml}
         previewTable = render_to_string("previewInput.html", context)
+        intraDistance = np.zeros((nCenters, nCenters))
         return JsonResponse({'previewTable': previewTable, "nCenters": nCenters})
     return HttpResponse("")
     
+def calInterDist(cluster1, cluster2):
+    dist = np.array([])
+    points1 = cluster1.points
+    points2 = cluster2.points
+    for i in range(points1.shape[0]):
+        for j in range(points2.shape[0]):
+            dist = np.append(dist, calculateDistance(points1[i], points2[j]))
+    return np.amin(dist)
+    
+def calIntraDist(cluster):
+    points = cluster.points
+    dist = np.array([0.0000001])
+    print("points.size")
+    print(points.size)
+    print("points.shape")
+    print(points.shape)
+    for i in range(points.shape[0] - 1):
+        for j in range(i+1, points.shape[0]):
+            #print("i,j")
+            #print(i,j)
+            dist = np.append(dist, calculateDistance(points[i], points[j]))
+    return np.amax(dist)
+
+def calDunIndex(clusters):
+    interDist = np.array([])
+    intraDist = np.array([])
+    for i in range(len(clusters) - 1):
+        intraDist = np.append(intraDist, calIntraDist(clusters[i]))
+        for j in range(i+1, len(clusters)):
+            #print("i,j")
+            #print(i,j)
+            interDist = np.append(interDist, calInterDist(clusters[i], clusters[j]))
+    intraDist = np.append(intraDist, calIntraDist(clusters[len(clusters)-1]))
+    print("intraDist")
+    print(intraDist)
+    print("interDist")
+    print(interDist)
+    return (np.amin(interDist) / np.amax(intraDist))    
+            
+            
 def clustering(request,*args,**kwargs):
     global m
     global epsilon
@@ -154,6 +198,7 @@ def clustering(request,*args,**kwargs):
     global inputFile
     global nCenters
     global maxIters
+    global intraDistance
     start_time = time.time()
     if request.method == 'POST':
          
@@ -171,7 +216,7 @@ def clustering(request,*args,**kwargs):
         print("data")
         print(data)
         u, centers, error, iters = sfcmClustering(data, nCenters, initU, m, epsilon, maxIter=maxIters)
-        efficiency = 0
+        clustersHtml = []
         clusters = []
         # w, h = np.shape(center)
         # print(w)
@@ -186,18 +231,26 @@ def clustering(request,*args,**kwargs):
             print(i)
             #i = i + 1
             #clusters[i].center = temp.append(pd.DataFrame(center[i])).to_html()
-            temp = Cluster()
+            temp = ClusterHtml()
+            temp1 = Cluster()
+            temp1.center = centers[i]
+            temp1.points = data[cluster_membership == i,:]
+            print("temp1.points")
+            print(temp1.points)
+            clusters.append(temp1)
             print("centers[i]")
             print(centers[i])
             print("centers[i].shape")
             print(centers[i].shape)
             temp.center = pd.DataFrame(centers[i].reshape(1,-1), columns=list(inputTable)).to_html()
             temp.points = inputTable[cluster_membership == i].to_html()
-            clusters.append(temp)
+            clustersHtml.append(temp)
             # context[f"tamCum{i}"] = tamCum[i].to_html()
             # context[f"cum{i}"] = cum[i].to_html()
-        
-        context = {"clusters": clusters}
+        efficiency = calDunIndex(clusters)
+        print("efficiency")
+        print(efficiency)
+        context = {"clusters": clustersHtml}
         executionTime = "%s seconds" % (time.time() - start_time)
         context1 = {"totalIter": iters, "efficiency": efficiency, "executionTime": executionTime, "nCenters": nCenters, "error": error}
         result = render_to_string('result.html', context)
